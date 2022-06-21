@@ -2,8 +2,8 @@
 #include "stb_image_write.h"
 #include "cglm/include/cglm/affine.h"
 
-#define WIDTH 12
-#define HEIGHT 12
+#define WIDTH 128
+#define HEIGHT 128
 #define NUMBER_OF_CHANNELS 3
 
 void createBuffer(int width, int height, unsigned char** data)
@@ -35,13 +35,29 @@ void setPixel(int red, int green, int blue, int x, int y, unsigned char* data)
 	data[x * WIDTH * NUMBER_OF_CHANNELS + y * NUMBER_OF_CHANNELS + 2] = blue;
 }
 
+void getCirclePoints(unsigned char* data)
+{
+	float angle = 0.0f;
+	float centerX = (float)WIDTH / 2.0f;
+	float centerY = (float)HEIGHT / 2.0f;
+	float radius = (float)WIDTH / 4.0f;
+	int x, y;
+	for (size_t i = 0; i < 720; i++)
+	{
+		x = centerX + radius * cos(angle);
+		y = centerY + radius * sin(angle);
+		angle += 1.0f;
+		setPixel(255, 0, 0, x, y, data);
+	}
+}
+
 int main()
 {
 	unsigned char* data = 0;
 	createBuffer(WIDTH, HEIGHT, &data);
 	clearColor(102, 7, 185, data);
 	
-	setPixel(255, 0, 0, 5, 5, data);
+	getCirclePoints(data);
 	writelmage("ozgis_output.png", WIDTH, HEIGHT, 3, data, WIDTH * NUMBER_OF_CHANNELS, true);
 	printf("My first graphic app without OpenGL :) \n");
 
