@@ -1,16 +1,9 @@
-#include<stdio.h>
+#include <stdio.h>
 #include "stb_image_write.h"
-#include "cglm/include/cglm/affine.h"
-
-#define WIDTH 512
-#define HEIGHT 512
-#define NUMBER_OF_CHANNELS 3
-
-typedef struct
-{
-	int x;
-	int y;
-}Point;
+#include <stdlib.h>
+#include "loader.h"
+#include "common.h"
+#include "main.h"
 
 void createBuffer(int width, int height, unsigned char** data)
 {
@@ -18,7 +11,7 @@ void createBuffer(int width, int height, unsigned char** data)
 }
 
 void writelmage(const char* filename, int width, int height, int comp,
-	           const void* data, int stride, bool isFlipped)
+	const void* data, int stride, unsigned int isFlipped)
 {
 	stbi_flip_vertically_on_write(isFlipped);
 	stbi_write_png(filename, width, height, comp, data, stride);
@@ -52,8 +45,8 @@ void drawLine(int red, int green, int blue, Point start, Point end, unsigned cha
 	}
 }
 
-void drawTriangle(int red, int green, int blue, 
-	              Point point1, Point point2, Point point3, unsigned char* data)
+void drawTriangle(int red, int green, int blue,
+	Point point1, Point point2, Point point3, unsigned char* data)
 {
 	drawLine(red, green, blue, point1, point2, data);
 	drawLine(red, green, blue, point2, point3, data);
@@ -65,14 +58,21 @@ int main()
 	unsigned char* data = 0;
 	createBuffer(WIDTH, HEIGHT, &data);
 	clearColor(0, 0, 0, data);
-	
-	Point trianglePoint1 = { 200, 200 };
-	Point trianglePoint2 = { 200, 300 };
-	Point trianglePoint3 = { 300, 250 };
-	drawTriangle(255, 255, 0, trianglePoint1, trianglePoint2, trianglePoint3, data);
-	writelmage("triangle.png", WIDTH, HEIGHT, 3, data, 
-		       WIDTH * NUMBER_OF_CHANNELS, true);
-	printf("My first graphic app without OpenGL :) \n");
 
+	int numOfTriangles = LoadObjAndConvert("../Resources/african_head.obj");
+	if (0 == numOfTriangles) 
+	{
+		printf("\nfailed to load & conv\n");
+		return -1;
+	}
+
+	for (size_t i = 0; i < numOfTriangles; i++)
+	{
+		drawTriangle(255, 255, 0, vertexArray[0 + i * 3], vertexArray[1 + i * 3], vertexArray[2 + i * 3], data);
+	}
+
+	writelmage("african.png", WIDTH, HEIGHT, 3, data, WIDTH * NUMBER_OF_CHANNELS, 1);
+	free(data);
+	free(vertexArray);
 	return 0;
 }
