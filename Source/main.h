@@ -1,5 +1,7 @@
 #pragma once
 
+char* textureData;
+
 void createBuffer(int width, int height, unsigned char** data);
 void writelmage(const char* filename, int width, int height, int comp,
 	const void* data, int stride, unsigned int isFlipped);

@@ -171,7 +171,7 @@ static void get_file_data(void* ctx, const char* filename, const int is_mtl,
 	(void)ctx;
 
 	if (!filename) {
-		printf("null filename\n");
+		//printf("null filename\n");
 		(*data) = NULL;
 		(*len) = 0;
 		return;
@@ -246,12 +246,12 @@ int LoadObjAndConvert(const char* filename)
 					v[1][k] = attrib.vertices[3 * (size_t)f1 + k];
 					v[2][k] = attrib.vertices[3 * (size_t)f2 + k];
 				}
-				p1.x = v[0][0];
-				p1.y = v[0][1];
-				p2.x = v[1][0];
-				p2.y = v[1][1];
-				p3.x = v[2][0];
-				p3.y = v[2][1];
+				p1.y = v[0][0];
+				p1.x = v[0][1];
+				p2.y = v[1][0];
+				p2.x = v[1][1];
+				p3.y = v[2][0];
+				p3.x = v[2][1];
 
 				vertexArray[0 + i * 3] = p1;
 				vertexArray[1 + i * 3] = p2;

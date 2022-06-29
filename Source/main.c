@@ -1,9 +1,14 @@
+#include <glad/glad.h>
+#include <glfw-3.3.7/include/GLFW/glfw3.h>
 #include <stdio.h>
 #include "stb_image_write.h"
 #include <stdlib.h>
 #include "loader.h"
 #include "common.h"
 #include "main.h"
+#include "Window.h"
+
+extern char* textureData;
 
 void createBuffer(int width, int height, unsigned char** data)
 {
@@ -67,19 +72,23 @@ int main()
 	createBuffer(WIDTH, HEIGHT, &data);
 	clearColor(0, 0, 0, data);
 
-	int numOfTriangles = LoadObjAndConvert("../Resources/african_head.obj");
+	int numOfTriangles = LoadObjAndConvert("../../Resources/african_head.obj");
 	if (0 == numOfTriangles) 
 	{
 		printf("\nfailed to load & conv\n");
 		return -1;
 	}
-
 	for (size_t i = 0; i < numOfTriangles; i++)
 	{
 		drawTriangle(255, 255, 0, vertexArray[0 + i * 3], vertexArray[1 + i * 3], vertexArray[2 + i * 3], data);
 	}
 
-	writelmage("african.png", WIDTH, HEIGHT, 3, data, WIDTH * NUMBER_OF_CHANNELS, 1);
+	writelmage("../../outputs/african.png", WIDTH, HEIGHT, 3, data, WIDTH * NUMBER_OF_CHANNELS, 1);
+
+	textureData = data;
+	OpenWindow(WIDTH/2, HEIGHT/2);
+	MainLoop();
+
 	free(data);
 	free(vertexArray);
 	return 0;
