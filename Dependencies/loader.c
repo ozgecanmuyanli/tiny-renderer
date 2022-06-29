@@ -21,7 +21,7 @@
 #include <unistd.h>
 #endif
 
-extern Point* vertexArray;
+extern PointF* vertexArray;
 
 typedef struct {
 	unsigned int vb;
@@ -190,7 +190,7 @@ int LoadObjAndConvert(const char* filename)
 	size_t num_shapes;
 	tinyobj_material_t* materials = NULL;
 	size_t num_materials;
-	Point p1, p2, p3;
+	PointF p1, p2, p3;
 
 	{
 		unsigned int flags = TINYOBJ_FLAG_TRIANGULATE;
@@ -204,7 +204,7 @@ int LoadObjAndConvert(const char* filename)
 
 	}
 
-	vertexArray = (Point*)malloc(attrib.num_face_num_verts * 3 * sizeof(Point));
+	vertexArray = (PointF*)malloc(attrib.num_face_num_verts * 3 * sizeof(PointF));
 
 	{
 		DrawObject o;
@@ -246,17 +246,18 @@ int LoadObjAndConvert(const char* filename)
 					v[1][k] = attrib.vertices[3 * (size_t)f1 + k];
 					v[2][k] = attrib.vertices[3 * (size_t)f2 + k];
 				}
-				p1.x = (v[0][0] + 1.0f) * (float)WIDTH / 2.0f;
-				p1.y = (v[0][1] + 1.0f) * (float)HEIGHT / 2.0f;
-				p2.x = (v[1][0] + 1.0f) * (float)WIDTH / 2.0f;
-				p2.y = (v[1][1] + 1.0f) * (float)HEIGHT / 2.0f;
-				p3.x = (v[2][0] + 1.0f) * (float)WIDTH / 2.0f;
-				p3.y = (v[2][1] + 1.0f) * (float)HEIGHT / 2.0f;
+				p1.x = v[0][0];
+				p1.y = v[0][1];
+				p2.x = v[1][0];
+				p2.y = v[1][1];
+				p3.x = v[2][0];
+				p3.y = v[2][1];
 
 				vertexArray[0 + i * 3] = p1;
 				vertexArray[1 + i * 3] = p2;
 				vertexArray[2 + i * 3] = p3;
 
+					
 				if (attrib.num_normals > 0) 
 				{
 					int f0 = idx0.vn_idx;

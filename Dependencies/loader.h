@@ -1,5 +1,5 @@
 #pragma once
 #include "common.h"
 
-Point* vertexArray;
+PointF* vertexArray;
 int LoadObjAndConvert(const char* filename);

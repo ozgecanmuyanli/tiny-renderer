@@ -34,23 +34,31 @@ void setPixel(int red, int green, int blue, int x, int y, unsigned char* data)
 	data[x * WIDTH * NUMBER_OF_CHANNELS + y * NUMBER_OF_CHANNELS + 2] = blue;
 }
 
-void drawLine(int red, int green, int blue, Point start, Point end, unsigned char* data)
+void drawLine(int red, int green, int blue, PointF start, PointF end, unsigned char* data)
 {
-	int x, y;
+	PointF tmp;
+	Point screenCoordInPixel;
 	for (float increment = 0.0f; increment < 1.0f; increment += 0.001f)
 	{
-		x = start.x + (end.x - start.x) * increment;
-		y = start.y + (end.y - start.y) * increment;
-		setPixel(red, green, blue, x, y, data);
+		tmp.x = start.x + (end.x - start.x) * increment;
+		tmp.y = start.y + (end.y - start.y) * increment;
+		setViewPort(tmp, &screenCoordInPixel);
+		setPixel(red, green, blue, screenCoordInPixel.x, screenCoordInPixel.y, data);
 	}
 }
 
 void drawTriangle(int red, int green, int blue,
-	Point point1, Point point2, Point point3, unsigned char* data)
+	PointF point1, PointF point2, PointF point3, unsigned char* data)
 {
 	drawLine(red, green, blue, point1, point2, data);
 	drawLine(red, green, blue, point2, point3, data);
 	drawLine(red, green, blue, point3, point1, data);
+}
+
+void setViewPort(PointF point, Point* screenPoint)
+{
+	screenPoint->x = (point.x +1.0f)* (float)WIDTH / 2.0f;
+	screenPoint->y = (point.y + 1.0f) * (float)HEIGHT / 2.0f;
 }
 
 int main()
