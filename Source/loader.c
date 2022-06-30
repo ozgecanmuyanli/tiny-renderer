@@ -30,9 +30,6 @@ typedef struct {
 
 static DrawObject gDrawObject;
 
-static int width = 768;
-static int height = 768;
-
 static bool use_colors = false;
 static bool draw_wireframe = true;
 

@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "stb_image_write.h"
 #include <stdlib.h>
+#include "swap.h"
 #include "loader.h"
 #include "common.h"
 #include "main.h"
@@ -15,7 +16,7 @@ void createBuffer(int width, int height, unsigned char** data)
 	*data = calloc(NUMBER_OF_CHANNELS * width * height, sizeof(unsigned char));
 }
 
-void writelmage(const char* filename, int width, int height, int comp,
+void writeImage(const char* filename, int width, int height, int comp,
 	const void* data, int stride, unsigned int isFlipped)
 {
 	stbi_flip_vertically_on_write(isFlipped);
@@ -41,14 +42,43 @@ void setPixel(int red, int green, int blue, int x, int y, unsigned char* data)
 
 void drawLine(int red, int green, int blue, PointF start, PointF end, unsigned char* data)
 {
-	PointF tmp;
-	Point screenCoordInPixel;
-	for (float increment = 0.0f; increment < 1.0f; increment += 0.001f)
+	Point startInPixel, endInPixel;
+	setViewPort(start, &startInPixel);
+	setViewPort(end, &endInPixel);
+
+	unsigned int steep = 0;
+	if (abs(startInPixel.x - endInPixel.x) < abs(startInPixel.y - endInPixel.y)) 
 	{
-		tmp.x = start.x + (end.x - start.x) * increment;
-		tmp.y = start.y + (end.y - start.y) * increment;
-		setViewPort(tmp, &screenCoordInPixel);
-		setPixel(red, green, blue, screenCoordInPixel.x, screenCoordInPixel.y, data);
+		swap(&startInPixel.x, &startInPixel.y);
+		swap(&endInPixel.x, &endInPixel.y);
+		steep = 1;
+	}
+	if (startInPixel.x > endInPixel.x) 
+	{
+		swap(&startInPixel.x, &endInPixel.x);
+		swap(&startInPixel.y, &endInPixel.y);
+	}
+	int dx = endInPixel.x - startInPixel.x;
+	int dy = endInPixel.y - startInPixel.y;
+	int derror2 = abs(dy) * 2;
+	int error2 = 0;
+	int y = startInPixel.y;
+	for (int x = startInPixel.x; x <= endInPixel.x; x++)
+	{
+		if (steep)
+		{
+			setPixel(red, green, blue, y, x, data);
+		}
+		else
+		{
+			setPixel(red, green, blue, x, y, data);
+		}
+		error2 += derror2;
+		if (error2 > dx)
+		{
+			y += (endInPixel.y > startInPixel.y ? 1 : -1);
+			error2 -= dx * 2;
+		}
 	}
 }
 
@@ -62,7 +92,7 @@ void drawTriangle(int red, int green, int blue,
 
 void setViewPort(PointF point, Point* screenPoint)
 {
-	screenPoint->x = (point.x +1.0f)* (float)WIDTH / 2.0f;
+	screenPoint->x = (point.x + 1.0f) * (float)WIDTH / 2.0f;
 	screenPoint->y = (point.y + 1.0f) * (float)HEIGHT / 2.0f;
 }
 
@@ -80,10 +110,14 @@ int main()
 	}
 	for (size_t i = 0; i < numOfTriangles; i++)
 	{
-		drawTriangle(255, 255, 0, vertexArray[0 + i * 3], vertexArray[1 + i * 3], vertexArray[2 + i * 3], data);
+		drawTriangle(255, 255, 0, vertexArray[0 + i * 3], 
+								  vertexArray[1 + i * 3], 
+			                      vertexArray[2 + i * 3], 
+			                      data);
 	}
 
-	writelmage("../../outputs/african.png", WIDTH, HEIGHT, 3, data, WIDTH * NUMBER_OF_CHANNELS, 1);
+	writeImage("../../../output_images/african.png", WIDTH, HEIGHT, 
+		       3, data, WIDTH * NUMBER_OF_CHANNELS, 1);
 
 	textureData = data;
 	OpenWindow(WIDTH/2, HEIGHT/2);
