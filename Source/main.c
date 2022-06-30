@@ -33,6 +33,20 @@ void clearColor(int red, int green, int blue, unsigned char* data)
 	}
 }
 
+void setViewPort(PointF point, Point* screenPoint)
+{
+	screenPoint->x = (point.x + 1.0f) * WIDTH / 2;
+	screenPoint->y = (point.y + 1.0f) * HEIGHT / 2;
+}
+
+int isInNDC(PointF point)
+{
+	if ((-1.0f <= point.x) && (-1.0f <= point.y) && (1.0f >= point.x) && (1.0f >= point.y))
+		return 1;
+	else
+		return 0;
+}
+
 void setPixel(int red, int green, int blue, int x, int y, unsigned char* data)
 {
 	data[x * WIDTH * NUMBER_OF_CHANNELS + y * NUMBER_OF_CHANNELS] = red;
@@ -42,58 +56,55 @@ void setPixel(int red, int green, int blue, int x, int y, unsigned char* data)
 
 void drawLine(int red, int green, int blue, PointF start, PointF end, unsigned char* data)
 {
-	Point startInPixel, endInPixel;
-	setViewPort(start, &startInPixel);
-	setViewPort(end, &endInPixel);
+	if (isInNDC(start) && isInNDC(end))
+	{
+		Point startInPixel, endInPixel;
+		setViewPort(start, &startInPixel);
+		setViewPort(end, &endInPixel);
 
-	unsigned int steep = 0;
-	if (abs(startInPixel.x - endInPixel.x) < abs(startInPixel.y - endInPixel.y)) 
-	{
-		swap(&startInPixel.x, &startInPixel.y);
-		swap(&endInPixel.x, &endInPixel.y);
-		steep = 1;
-	}
-	if (startInPixel.x > endInPixel.x) 
-	{
-		swap(&startInPixel.x, &endInPixel.x);
-		swap(&startInPixel.y, &endInPixel.y);
-	}
-	int dx = endInPixel.x - startInPixel.x;
-	int dy = endInPixel.y - startInPixel.y;
-	int derror2 = abs(dy) * 2;
-	int error2 = 0;
-	int y = startInPixel.y;
-	for (int x = startInPixel.x; x <= endInPixel.x; x++)
-	{
-		if (steep)
+		unsigned int steep = 0;
+		if (abs(startInPixel.x - endInPixel.x) < abs(startInPixel.y - endInPixel.y))
 		{
-			setPixel(red, green, blue, y, x, data);
+			swap(&startInPixel.x, &startInPixel.y);
+			swap(&endInPixel.x, &endInPixel.y);
+			steep = 1;
 		}
-		else
+		if (startInPixel.x > endInPixel.x)
 		{
-			setPixel(red, green, blue, x, y, data);
+			swap(&startInPixel.x, &endInPixel.x);
+			swap(&startInPixel.y, &endInPixel.y);
 		}
-		error2 += derror2;
-		if (error2 > dx)
+		int dx = endInPixel.x - startInPixel.x;
+		int dy = endInPixel.y - startInPixel.y;
+		int derror2 = abs(dy) * 2;
+		int error2 = 0;
+		int y = startInPixel.y;
+		for (int x = startInPixel.x; x <= endInPixel.x; x++)
 		{
-			y += (endInPixel.y > startInPixel.y ? 1 : -1);
-			error2 -= dx * 2;
+			if (steep)
+			{
+				setPixel(red, green, blue, y, x, data);
+			}
+			else
+			{
+				setPixel(red, green, blue, x, y, data);
+			}
+			error2 += derror2;
+			if (error2 > dx)
+			{
+				y += (endInPixel.y > startInPixel.y ? 1 : -1);
+				error2 -= dx * 2;
+			}
 		}
 	}
 }
 
-void drawTriangle(int red, int green, int blue,
-	PointF point1, PointF point2, PointF point3, unsigned char* data)
+void drawTriangle(int red, int green, int blue, 
+	              PointF point1, PointF point2, PointF point3, unsigned char* data)
 {
 	drawLine(red, green, blue, point1, point2, data);
 	drawLine(red, green, blue, point2, point3, data);
 	drawLine(red, green, blue, point3, point1, data);
-}
-
-void setViewPort(PointF point, Point* screenPoint)
-{
-	screenPoint->x = (point.x + 1.0f) * (float)WIDTH / 2.0f;
-	screenPoint->y = (point.y + 1.0f) * (float)HEIGHT / 2.0f;
 }
 
 int main()
@@ -116,8 +127,8 @@ int main()
 			                      data);
 	}
 
-	writeImage("../../../output_images/african.png", WIDTH, HEIGHT, 
-		       3, data, WIDTH * NUMBER_OF_CHANNELS, 1);
+	writeImage("../../../output_images/african.png", WIDTH, HEIGHT,
+		3, data, WIDTH * NUMBER_OF_CHANNELS, 1);
 
 	textureData = data;
 	OpenWindow(WIDTH/2, HEIGHT/2);
