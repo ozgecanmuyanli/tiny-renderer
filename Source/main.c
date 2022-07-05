@@ -1,22 +1,25 @@
 #include <glad/glad.h>
 #include <glfw-3.3.7/include/GLFW/glfw3.h>
-#include <cglm/include/cglm/vec2.h>
-#include <cglm/include/cglm/vec3.h>
 #include <stdio.h>
 #include "stb_image_write.h"
 #include <stdlib.h>
 #include "math.h"
 #include "swap.h"
 #include "loader.h"
-#include "common.h"
+#include "commonTypes.h"
 #include "main.h"
 #include "Window.h"
 
 extern char* textureData;
 
-void createBuffer(int width, int height, unsigned char** data)
+void createColorBuffer(int width, int height, unsigned char** data)
 {
 	*data = calloc(NUMBER_OF_CHANNELS * width * height, sizeof(unsigned char));
+}
+
+void createDepthBuffer(int width, int height, float** depthBuffer)
+{
+	*depthBuffer = calloc(width * height, sizeof(float));
 }
 
 void writeImage(const char* filename, int width, int height, int comp,
@@ -33,6 +36,14 @@ void clearColor(int red, int green, int blue, unsigned char* data)
 		data[i * NUMBER_OF_CHANNELS] = red;
 		data[i * NUMBER_OF_CHANNELS + 1] = green;
 		data[i * NUMBER_OF_CHANNELS + 2] = blue;
+	}
+}
+
+void clearDepthBuffer(float zValue, float* depthBuffer)
+{
+	for (unsigned int i = 0; i < WIDTH * HEIGHT; i++)
+	{
+		depthBuffer[i] = zValue;
 	}
 }
 
@@ -55,7 +66,7 @@ int isInNDC(PointF point)
 void Barycentric(ivec2 p, ivec2 a, ivec2 b, ivec2 c, vec3 barycentricCoords)
 {
 	float u, v, w;
-    vec2 v0, v1, v2;
+	vec2 v0, v1, v2;
 	v0[0] = b[0] - a[0];
 	v0[1] = b[1] - a[1];
 	v1[0] = c[0] - a[0];
@@ -78,9 +89,9 @@ void Barycentric(ivec2 p, ivec2 a, ivec2 b, ivec2 c, vec3 barycentricCoords)
 
 void setPixel(int red, int green, int blue, int x, int y, unsigned char* data)
 {
-	data[x * WIDTH * NUMBER_OF_CHANNELS + y * NUMBER_OF_CHANNELS] = red;
-	data[x * WIDTH * NUMBER_OF_CHANNELS + y * NUMBER_OF_CHANNELS + 1] = green;
-	data[x * WIDTH * NUMBER_OF_CHANNELS + y * NUMBER_OF_CHANNELS + 2] = blue;
+	data[y * WIDTH * NUMBER_OF_CHANNELS + x * NUMBER_OF_CHANNELS] = red;
+	data[y * WIDTH * NUMBER_OF_CHANNELS + x * NUMBER_OF_CHANNELS + 1] = green;
+	data[y * WIDTH * NUMBER_OF_CHANNELS + x * NUMBER_OF_CHANNELS + 2] = blue;
 }
 
 void drawLine(int red, int green, int blue, PointF start, PointF end, unsigned char* data)
@@ -129,7 +140,7 @@ void drawLine(int red, int green, int blue, PointF start, PointF end, unsigned c
 }
 
 void drawTriangle(int red, int green, int blue,
-	PointF point1, PointF point2, PointF point3, unsigned char* data, int isFilled)
+	PointF point1, PointF point2, PointF point3, float* depthBuffer, unsigned char* data, int isFilled)
 {
 	if (isFilled)
 	{
@@ -138,6 +149,7 @@ void drawTriangle(int red, int green, int blue,
 			vec3 bc_screen;
 			ivec2 pixels;
 			Point screenP1, screenP2, screenP3;
+			float zValue;
 			setViewPort(point1, &screenP1);
 			setViewPort(point2, &screenP2);
 			setViewPort(point3, &screenP3);
@@ -151,18 +163,24 @@ void drawTriangle(int red, int green, int blue,
 			p3[1] = screenP3.y;
 
 			/* get the bounding box of the triangle */
-			int maxX = max(p1[0], max(p2[0], p3[0]));
-			int minX = min(p1[0], min(p2[0], p3[0]));
-			int maxY = max(p1[1], max(p2[1], p3[1]));
-			int minY = min(p1[1], min(p2[1], p3[1]));
+			int maxX = min(WIDTH - 1, max(p1[0], max(p2[0], p3[0])));
+			int minX = max(0, min(p1[0], min(p2[0], p3[0])));
+			int maxY = min(HEIGHT - 1, max(p1[1], max(p2[1], p3[1])));
+			int minY = max(0, min(p1[1], min(p2[1], p3[1])));
+
 			for (pixels[0] = minX; pixels[0] <= maxX; pixels[0]++)
 			{
 				for (pixels[1] = minY; pixels[1] <= maxY; pixels[1]++)
 				{
 					Barycentric(pixels, p1, p2, p3, bc_screen);
-					if (bc_screen[0] < 0 || bc_screen[1] < 0 || bc_screen[2] < 0) 
+					if (bc_screen[0] < 0 || bc_screen[1] < 0 || bc_screen[2] < 0)
 						continue;
-					setPixel(red, green, blue, pixels[0], pixels[1], data);
+					zValue = point1.z * bc_screen[2] + point2.z * bc_screen[0] + point3.z * bc_screen[1];
+					if (zValue > depthBuffer[pixels[0] + pixels[1] * WIDTH])
+					{
+						depthBuffer[pixels[0] + pixels[1] * WIDTH] = zValue;
+						setPixel(red, green, blue, pixels[0], pixels[1], data);
+					}
 				}
 			}
 		}
@@ -177,35 +195,49 @@ void drawTriangle(int red, int green, int blue,
 
 int main()
 {
-	unsigned char* data = 0;
-	createBuffer(WIDTH, HEIGHT, &data);
-	clearColor(0, 0, 0, data);
+	OpenWindow(WIDTH / 2, HEIGHT / 2); //OpenGL window
 
-	int numOfTriangles = LoadObjAndConvert("../../Resources/african_head.obj");
+	unsigned char* data = 0;
+	unsigned char* depthBuffer = 0;
+	createColorBuffer(WIDTH, HEIGHT, &data);
+	createDepthBuffer(WIDTH, HEIGHT, &depthBuffer);
+
+	vec3 light_dir = { 0.0f, 0.0f, 1.0f };
+	float intensity0, intensity1, intensity2;
+	size_t numOfTriangles = LoadObjAndConvert("../../Resources/african_head.obj");
 	if (0 == numOfTriangles)
 	{
 		printf("\nfailed to load & conv\n");
 		return -1;
 	}
-	for (size_t i = 0; i < numOfTriangles; i++)
+
+	while (1)
 	{
-		int r = rand() % 255;
-		int g = rand() % 255;
-		int b = rand() % 255;
-		drawTriangle(r, g, b, vertexArray[0 + i * 3],
-			vertexArray[1 + i * 3],
-			vertexArray[2 + i * 3],
-			data, 1);
+		clearColor(0, 0, 0, data);
+		clearDepthBuffer(-1.0f, depthBuffer);
+
+		glm_vec3_normalize(light_dir);
+		for (size_t i = 0; i < numOfTriangles; i++)
+		{
+			glm_vec3_normalize(normalArray[i * 3]);
+			intensity0 = glm_vec3_dot(normalArray[i * 3], light_dir);
+
+			drawTriangle(intensity0 * 255, intensity0 * 255, intensity0 * 255, vertexArray[0 + i * 3],
+				vertexArray[1 + i * 3],
+				vertexArray[2 + i * 3],
+				depthBuffer,
+				data, 1);
+		}
+		textureData = data;
+		MainLoop();
 	}
 
-	writeImage("../../../output_images/colored_filled_african_head.png", WIDTH, HEIGHT,
+	writeImage("../../../output_images/light&depthTest.png", WIDTH, HEIGHT,
 		3, data, WIDTH * NUMBER_OF_CHANNELS, 1);
-
-	textureData = data;
-	OpenWindow(WIDTH / 2, HEIGHT / 2);
-	MainLoop();
 
 	free(data);
 	free(vertexArray);
+	free(normalArray);
 	return 0;
 }
+

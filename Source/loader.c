@@ -22,6 +22,7 @@
 #endif
 
 extern PointF* vertexArray;
+extern vec3* normalArray;
 
 typedef struct {
 	unsigned int vb;
@@ -188,6 +189,7 @@ int LoadObjAndConvert(const char* filename)
 	tinyobj_material_t* materials = NULL;
 	size_t num_materials;
 	PointF p1, p2, p3;
+	vec3 normal1, normal2, normal3;
 
 	{
 		unsigned int flags = TINYOBJ_FLAG_TRIANGULATE;
@@ -202,6 +204,8 @@ int LoadObjAndConvert(const char* filename)
 	}
 
 	vertexArray = (PointF*)malloc(attrib.num_face_num_verts * 3 * sizeof(PointF));
+	normalArray = (vec3*)malloc(attrib.num_face_num_verts * 3 * sizeof(vec3));
+
 
 	{
 		DrawObject o;
@@ -243,12 +247,15 @@ int LoadObjAndConvert(const char* filename)
 					v[1][k] = attrib.vertices[3 * (size_t)f1 + k];
 					v[2][k] = attrib.vertices[3 * (size_t)f2 + k];
 				}
-				p1.y = v[0][0];
-				p1.x = v[0][1];
-				p2.y = v[1][0];
-				p2.x = v[1][1];
-				p3.y = v[2][0];
-				p3.x = v[2][1];
+				p1.x = v[0][0];
+				p1.y = v[0][1];
+				p1.z = v[0][2];
+				p2.x = v[1][0];
+				p2.y = v[1][1];
+				p2.z = v[1][2];
+				p3.x = v[2][0];
+				p3.y = v[2][1];
+				p3.z = v[2][2];
 
 				vertexArray[0 + i * 3] = p1;
 				vertexArray[1 + i * 3] = p2;
@@ -268,6 +275,17 @@ int LoadObjAndConvert(const char* filename)
 							n[1][k] = attrib.normals[3 * (size_t)f1 + k];
 							n[2][k] = attrib.normals[3 * (size_t)f2 + k];
 						}
+						normalArray[0 + i * 3][0] = n[0][0];
+						normalArray[0 + i * 3][1] = n[0][1];
+						normalArray[0 + i * 3][2] = n[0][2];
+
+						normalArray[1 + i * 3][0] = n[1][0];
+						normalArray[1 + i * 3][1] = n[1][1];
+						normalArray[1 + i * 3][2] = n[1][2];
+
+						normalArray[2 + i * 3][0] = n[2][0];
+						normalArray[2 + i * 3][1] = n[2][1];
+						normalArray[2 + i * 3][2] = n[2][2];
 					}
 					else 
 					{ /* normal index is not defined for this face */

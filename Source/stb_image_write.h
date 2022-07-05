@@ -628,7 +628,7 @@ STBIWDEF int stbi_write_tga(char const *filename, int x, int y, int comp, const 
 }
 #endif
 
-// *************************************************************************************************
+//*************************************************************************************************
 // Radiance RGBE HDR writer
 // by Baldur Karlsson
 

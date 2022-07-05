@@ -1,7 +1,7 @@
 #include <glad/glad.h>
 #include <glfw-3.3.7/include/GLFW/glfw3.h>
 #include <stdio.h>
-#include "common.h"
+#include "commonTypes.h"
 #include "main.h"
 
 // GLOBALS
@@ -137,11 +137,12 @@ void getTexture()
 	{
 		printf("Failed to load texture");
 	}
-	free(textureData);
+	//free(textureData);
 }
 
 void MainLoop()
 {
+
 	createShader();
 	glUseProgram(shaderProgram);
 
@@ -171,15 +172,10 @@ void MainLoop()
 	glEnableVertexAttribArray(1);
 
 	glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
-	while (!glfwWindowShouldClose(window))
-	{
-		glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT);
 
-		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+	glBindVertexArray(VAO);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-		glfwSwapBuffers(window);
-	}
-	glfwDestroyWindow(window);
-	glfwTerminate();
+	glfwSwapBuffers(window);
 }
