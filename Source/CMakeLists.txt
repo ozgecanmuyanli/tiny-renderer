@@ -1,6 +1,7 @@
 add_executable(${PROJECT_NAME} main.c
                 Window.c
                 stb_image_write.c
+                stb_image.c
                 tinyobj_loader_c.c
                 loader.c)
 

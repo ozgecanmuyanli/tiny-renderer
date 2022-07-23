@@ -23,6 +23,7 @@
 
 extern PointF* vertexArray;
 extern vec3* normalArray;
+extern vec2* textureArray;
 
 typedef struct {
 	unsigned int vb;
@@ -189,7 +190,6 @@ int LoadObjAndConvert(const char* filename)
 	tinyobj_material_t* materials = NULL;
 	size_t num_materials;
 	PointF p1, p2, p3;
-	vec3 normal1, normal2, normal3;
 
 	{
 		unsigned int flags = TINYOBJ_FLAG_TRIANGULATE;
@@ -205,7 +205,7 @@ int LoadObjAndConvert(const char* filename)
 
 	vertexArray = (PointF*)malloc(attrib.num_face_num_verts * 3 * sizeof(PointF));
 	normalArray = (vec3*)malloc(attrib.num_face_num_verts * 3 * sizeof(vec3));
-
+	textureArray = (vec2*)malloc(attrib.num_face_num_verts * 3 * sizeof(vec2));
 
 	{
 		DrawObject o;
@@ -230,6 +230,7 @@ int LoadObjAndConvert(const char* filename)
 				size_t k;
 				float v[3][3];
 				float n[3][3];
+				float t[3][2];
 				float c[3];
 				float len2;
 
@@ -261,6 +262,27 @@ int LoadObjAndConvert(const char* filename)
 				vertexArray[1 + i * 3] = p2;
 				vertexArray[2 + i * 3] = p3;
 
+				if (attrib.num_texcoords > 0)
+				{
+					int f0 = idx0.vt_idx;
+					int f1 = idx1.vt_idx;
+					int f2 = idx2.vt_idx;
+
+					for (k = 0; k < 2; k++)
+					{
+						t[0][k] = attrib.texcoords[2 * (size_t)f0 + k];
+						t[1][k] = attrib.texcoords[2 * (size_t)f1 + k];
+						t[2][k] = attrib.texcoords[2 * (size_t)f2 + k];
+					}
+				}
+				textureArray[0 + i * 3][0] = t[0][0];
+				textureArray[0 + i * 3][1] = t[0][1];
+
+				textureArray[1 + i * 3][0] = t[1][0];
+				textureArray[1 + i * 3][1] = t[1][1];
+
+				textureArray[2 + i * 3][0] = t[2][0];
+				textureArray[2 + i * 3][1] = t[2][1];
 					
 				if (attrib.num_normals > 0) 
 				{
