@@ -5,9 +5,10 @@
 #include "main.h"
 
 // GLOBALS
-GLFWwindow* window;
+extern GLFWwindow* window;
 unsigned int shaderProgram;
 unsigned int texture;
+unsigned int VBO, VAO, EBO;
 float quadVertices[20] =
 {
 		 1.0f,  1.0f, 0.0f, 1.0f, 1.0f, // top right
@@ -96,8 +97,8 @@ int OpenWindow(int iWidth, int iHeight)
 		return -1;
 	}
 
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
 	if (!(window = glfwCreateWindow(iWidth, iHeight, "TINY RENDERER", NULL, NULL)))
 	{
@@ -105,7 +106,7 @@ int OpenWindow(int iWidth, int iHeight)
 	}
 
 	glfwMakeContextCurrent(window);
-	glfwSwapInterval(0);
+	glfwSwapInterval(1);
 
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
@@ -121,6 +122,7 @@ int OpenWindow(int iWidth, int iHeight)
 
 void getTexture()
 {
+
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -138,20 +140,15 @@ void getTexture()
 		printf("Failed to load texture");
 	}
 	//free(textureData);
+
+
 }
 
-void MainLoop()
+void OpenGLInit()
 {
-
+	OpenWindow(WIDTH / 2, HEIGHT / 2);
 	createShader();
-	glUseProgram(shaderProgram);
 
-	getTexture();
-	glActiveTexture(0);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glUniform1i(glGetUniformLocation(shaderProgram, "renderedTexture"), 0);
-
-	unsigned int VBO, VAO, EBO;
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &EBO);
@@ -171,11 +168,20 @@ void MainLoop()
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
+}
+
+void MainLoop()
+{
 	glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+	glUseProgram(shaderProgram);
+
+	getTexture();
+	glActiveTexture(0);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glUniform1i(glGetUniformLocation(shaderProgram, "renderedTexture"), 0);
+
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glBindVertexArray(VAO);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-	glfwSwapBuffers(window);
 }

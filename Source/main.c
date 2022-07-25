@@ -228,17 +228,17 @@ void drawTriangle(PointF point1, PointF point2, PointF point3,
 						continue;
 
 					// texture sampler
-					bc_textureCoord[0] = textureCoord1[0] * bc_screen[2] + 
-						                 textureCoord2[0] * bc_screen[0] + 
-						                 textureCoord3[0] * bc_screen[1];
-					bc_textureCoord[1] = textureCoord1[1] * bc_screen[2] + 
-						                 textureCoord2[1] * bc_screen[0] + 
-						                 textureCoord3[1] * bc_screen[1];
+					bc_textureCoord[0] = textureCoord1[0] * bc_screen[0] + 
+						                 textureCoord2[0] * bc_screen[1] + 
+						                 textureCoord3[0] * bc_screen[2];
+					bc_textureCoord[1] = textureCoord1[1] * bc_screen[0] + 
+						                 textureCoord2[1] * bc_screen[1] + 
+						                 textureCoord3[1] * bc_screen[2];
 					getTextureColor(bc_textureCoord, textureWidth, textureHeight, numOfChannels, 
 						            texture, &r, &g, &b);
 
 					// depth test
-					zValue = point1.z * bc_screen[2] + point2.z * bc_screen[0] + point3.z * bc_screen[1];
+					zValue = point1.z * bc_screen[0] + point2.z * bc_screen[1] + point3.z * bc_screen[2];
 					if (zValue > depthBuffer[pixels[0] + pixels[1] * WIDTH])
 					{
 						depthBuffer[pixels[0] + pixels[1] * WIDTH] = zValue;
@@ -258,7 +258,7 @@ void drawTriangle(PointF point1, PointF point2, PointF point3,
 
 int main()
 {
-	OpenWindow(WIDTH / 2, HEIGHT / 2); //OpenGL window
+	OpenGLInit();
 
 	unsigned char* data = 0;
 	unsigned char* depthBuffer = 0;
@@ -278,11 +278,12 @@ int main()
 	unsigned char* texture = stbi_load("../../Resources/african_head_diffuse.tga", 
 		                               &textureWidth, &textureHeight, &numOfChannels, 0);
 
-	while (1)
+	float red = 0;
+	while (!glfwWindowShouldClose(window))
 	{
 		clearColor(0, 0, 0, data);
 		clearDepthBuffer(-1.0f, depthBuffer);
-
+		glfwPollEvents();
 		for (size_t i = 0; i < numOfTriangles; i++)
 		{
 			drawTriangle(
@@ -303,9 +304,12 @@ int main()
 		}
 		textureData = data;
 		MainLoop();
-		writeImage("../../../output_images/texture.png", WIDTH, HEIGHT,
-			3, data, WIDTH * NUMBER_OF_CHANNELS, 1);
+		glfwSwapBuffers(window);
+		//writeImage("../../../output_images/texture_test.png", WIDTH, HEIGHT,
+		//	3, data, WIDTH * NUMBER_OF_CHANNELS, 1);
 	}
+	glfwDestroyWindow(window);
+	glfwTerminate();
 
 
 	free(data);
