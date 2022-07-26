@@ -132,7 +132,7 @@ void getTexture()
 
 	if (textureData)
 	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH, HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, RENDER_WIDTH, RENDER_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData);
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 	else
@@ -146,7 +146,7 @@ void getTexture()
 
 void OpenGLInit()
 {
-	OpenWindow(WIDTH / 2, HEIGHT / 2);
+	OpenWindow(WINDOW_WIDTH, WINDOW_HEIGHT);
 	createShader();
 
 	glGenVertexArrays(1, &VAO);

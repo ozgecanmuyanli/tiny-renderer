@@ -10,7 +10,7 @@ void writeImage(const char* filename, int width, int height, int comp,
 void clearColor(int red, int green, int blue, unsigned char* data);
 void setPixel(int red, int green, int blue, int x, int y, unsigned char* data);
 void drawLine(int red, int green, int blue, PointF start, PointF end, unsigned char* data);
-void drawTriangle(PointF point1, PointF point2, PointF point3,
+void drawTriangle(vec3 point1, vec3 point2, vec3 point3,
 	vec2 textureCoord1, vec2 textureCoord2, vec2 textureCoord3, vec3 normal,
 	int textureWidth, int textureHeight, int numOfChannels, unsigned char* texture,
 	float* depthBuffer, unsigned char* data, int isFilled);
@@ -20,3 +20,4 @@ void Barycentric(ivec2 p, ivec2 a, ivec2 b, ivec2 c, vec3 barycentricCoords);
 void getTextureColor(vec2 textCoord, int textureWidth, int textureHeight, int numOfChannels, 
 	unsigned char* texture, int* r, int* g, int* b);
 bool checkTriangle(ivec2 p1, ivec2 p2, ivec2 p3);
+void vertexShader(vec3 vertexPos, vec4 outputPos, mat4 model);

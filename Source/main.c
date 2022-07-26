@@ -32,7 +32,7 @@ void writeImage(const char* filename, int width, int height, int comp,
 
 void clearColor(int red, int green, int blue, unsigned char* data)
 {
-	for (unsigned int i = 0; i < WIDTH * HEIGHT; i++)
+	for (unsigned int i = 0; i < RENDER_WIDTH * RENDER_HEIGHT; i++)
 	{
 		data[i * NUMBER_OF_CHANNELS] = red;
 		data[i * NUMBER_OF_CHANNELS + 1] = green;
@@ -42,16 +42,23 @@ void clearColor(int red, int green, int blue, unsigned char* data)
 
 void clearDepthBuffer(float zValue, float* depthBuffer)
 {
-	for (unsigned int i = 0; i < WIDTH * HEIGHT; i++)
+	for (unsigned int i = 0; i < RENDER_WIDTH * RENDER_HEIGHT; i++)
 	{
 		depthBuffer[i] = zValue;
 	}
 }
 
+void setPixel(int red, int green, int blue, int x, int y, unsigned char* data)
+{
+	data[y * RENDER_WIDTH * NUMBER_OF_CHANNELS + x * NUMBER_OF_CHANNELS] = red;
+	data[y * RENDER_WIDTH * NUMBER_OF_CHANNELS + x * NUMBER_OF_CHANNELS + 1] = green;
+	data[y * RENDER_WIDTH * NUMBER_OF_CHANNELS + x * NUMBER_OF_CHANNELS + 2] = blue;
+}
+
 void setViewPort(PointF point, Point* screenPoint)
 {
-	screenPoint->x = (point.x + 1.0f) * WIDTH / 2;
-	screenPoint->y = (point.y + 1.0f) * HEIGHT / 2;
+	screenPoint->x = (point.x + 1.0f) * RENDER_WIDTH / 2;
+	screenPoint->y = (point.y + 1.0f) * RENDER_HEIGHT / 2;
 }
 
 int isInNDC(PointF point)
@@ -60,77 +67,6 @@ int isInNDC(PointF point)
 		return 1;
 	else
 		return 0;
-}
-
-// gets barycentric texture coord and returns the color of the pixel 
-// that corresponds to the texture coord
-void getTextureColor(vec2 textCoord, int textureWidth, int textureHeight, int numOfChannels, 
-	                 unsigned char* texture, int* r, int* g, int* b)
-{
-	ivec2 texturePixels;
-	texturePixels[0] = textCoord[0] * textureWidth;
-	texturePixels[1] = fabs(textCoord[1] - 1.0f) * textureHeight;
-
-	*r = texture[texturePixels[1] * textureWidth * numOfChannels + texturePixels[0] * numOfChannels];
-	*g = texture[texturePixels[1] * textureWidth * numOfChannels + texturePixels[0] * numOfChannels + 1];
-	*b = texture[texturePixels[1] * textureWidth * numOfChannels + texturePixels[0] * numOfChannels + 2];
-}
-
-// Function to check if three
-// points make a triangle
-bool checkTriangle(ivec2 p1, ivec2 p2, ivec2 p3)
-{
-	int a = p1[0] * (p2[1] - p3[1])
-		+ p2[0] * (p3[1] - p1[1])
-		+ p3[0] * (p1[1] - p2[1]);
-
-	if (a == 0)
-		return false;
-	else
-		return true;
-}
-
-// Compute barycentric coordinates (u, v, w) for
-// point p with respect to triangle (a, b, c)
-void Barycentric(ivec2 p, ivec2 a, ivec2 b, ivec2 c, vec3 barycentricCoords)
-{
-	bool isTriangle = checkTriangle(a, b, c);
-	if (isTriangle)
-	{
-		float u, v, w;
-		vec2 v0, v1, v2;
-		v0[0] = b[0] - a[0];
-		v0[1] = b[1] - a[1];
-		v1[0] = c[0] - a[0];
-		v1[1] = c[1] - a[1];
-		v2[0] = p[0] - a[0];
-		v2[1] = p[1] - a[1];
-		float d00 = glm_vec2_dot(v0, v0);
-		float d01 = glm_vec2_dot(v0, v1);
-		float d11 = glm_vec2_dot(v1, v1);
-		float d20 = glm_vec2_dot(v2, v0);
-		float d21 = glm_vec2_dot(v2, v1);
-		float denom = d00 * d11 - d01 * d01;
-		v = (d11 * d20 - d01 * d21) / denom;
-		w = (d00 * d21 - d01 * d20) / denom;
-		u = 1.0f - v - w;
-		barycentricCoords[0] = u;
-		barycentricCoords[1] = v;
-		barycentricCoords[2] = w;
-	}
-	else
-	{
-		barycentricCoords[0] = -1.0f;
-		barycentricCoords[1] = -1.0f;
-		barycentricCoords[2] = -1.0f;
-	}
-}
-
-void setPixel(int red, int green, int blue, int x, int y, unsigned char* data)
-{
-	data[y * WIDTH * NUMBER_OF_CHANNELS + x * NUMBER_OF_CHANNELS] = red;
-	data[y * WIDTH * NUMBER_OF_CHANNELS + x * NUMBER_OF_CHANNELS + 1] = green;
-	data[y * WIDTH * NUMBER_OF_CHANNELS + x * NUMBER_OF_CHANNELS + 2] = blue;
 }
 
 void drawLine(int red, int green, int blue, PointF start, PointF end, unsigned char* data)
@@ -178,82 +114,163 @@ void drawLine(int red, int green, int blue, PointF start, PointF end, unsigned c
 	}
 }
 
-void drawTriangle(PointF point1, PointF point2, PointF point3,
+// gets barycentric texture coord and returns the color of the pixel 
+// that corresponds to the texture coord
+void getTextureColor(vec2 textCoord, int textureWidth, int textureHeight, int numOfChannels,
+	unsigned char* texture, int* r, int* g, int* b)
+{
+	ivec2 texturePixels;
+	texturePixels[0] = textCoord[0] * textureWidth;
+	texturePixels[1] = fabs(textCoord[1] - 1.0f) * textureHeight;
+
+	*r = texture[texturePixels[1] * textureWidth * numOfChannels + texturePixels[0] * numOfChannels];
+	*g = texture[texturePixels[1] * textureWidth * numOfChannels + texturePixels[0] * numOfChannels + 1];
+	*b = texture[texturePixels[1] * textureWidth * numOfChannels + texturePixels[0] * numOfChannels + 2];
+}
+
+// Function to check if three
+// points make a triangle
+bool checkTriangle(ivec2 p1, ivec2 p2, ivec2 p3)
+{
+	int a = p1[0] * (p2[1] - p3[1])
+		+ p2[0] * (p3[1] - p1[1])
+		+ p3[0] * (p1[1] - p2[1]);
+
+	if (a == 0)
+		return false;
+	else
+		return true;
+}
+
+// Compute barycentric coordinates (u, v, w) for
+// point p with respect to triangle (a, b, c)
+void Barycentric(ivec2 p, ivec2 a, ivec2 b, ivec2 c, vec3 barycentricCoords)
+{
+	bool isTriangle = checkTriangle(a, b, c);
+	if (isTriangle)
+	{
+		double u, v, w;
+		vec2 v0, v1, v2;
+		v0[0] = b[0] - a[0];
+		v0[1] = b[1] - a[1];
+		v1[0] = c[0] - a[0];
+		v1[1] = c[1] - a[1];
+		v2[0] = p[0] - a[0];
+		v2[1] = p[1] - a[1];
+		double d00 = glm_vec2_dot(v0, v0);
+		double d01 = glm_vec2_dot(v0, v1);
+		double d11 = glm_vec2_dot(v1, v1);
+		double d20 = glm_vec2_dot(v2, v0);
+		double d21 = glm_vec2_dot(v2, v1);
+		double denom = d00 * d11 - d01 * d01;
+		v = (d11 * d20 - d01 * d21) / denom;
+		w = (d00 * d21 - d01 * d20) / denom;
+		u = 1.0f - v - w;
+		barycentricCoords[0] = u;
+		barycentricCoords[1] = v;
+		barycentricCoords[2] = w;
+	}
+	else
+	{
+		barycentricCoords[0] = -1.0f;
+		barycentricCoords[1] = -1.0f;
+		barycentricCoords[2] = -1.0f;
+	}
+}
+
+
+void drawTriangle(vec3 point1, vec3 point2, vec3 point3,
 	vec2 textureCoord1, vec2 textureCoord2, vec2 textureCoord3, vec3 normal,
 	int textureWidth, int textureHeight, int numOfChannels, unsigned char* texture,
 	float* depthBuffer, unsigned char* data, int isFilled)
 {
+	PointF pointf1, pointf2, pointf3;
+	pointf1.x = point1[0];
+	pointf1.y = point1[1];
+	pointf1.z = point1[2];
+	pointf2.x = point2[0];
+	pointf2.y = point2[1];
+	pointf2.z = point2[2];
+	pointf3.x = point3[0];
+	pointf3.y = point3[1];
+	pointf3.z = point3[2];
 	if (isFilled)
 	{
-		if (isInNDC(point1) && isInNDC(point2) && isInNDC(point3))
+		vec3 bc_screen;
+		ivec2 pixels;
+		Point screenP1, screenP2, screenP3;
+		ivec2 p1, p2, p3;
+		vec2 bc_textureCoord;
+		int r, g, b;
+		float zValue;
+		float intensity;
+
+		setViewPort(pointf1, &screenP1);
+		setViewPort(pointf2, &screenP2);
+		setViewPort(pointf3, &screenP3);
+
+		p1[0] = screenP1.x;
+		p1[1] = screenP1.y;
+		p2[0] = screenP2.x;
+		p2[1] = screenP2.y;
+		p3[0] = screenP3.x;
+		p3[1] = screenP3.y;
+
+		// for future light calculations
+		vec3 light_dir = { 0.0f, 0.0f, 1.0f };
+		glm_vec3_normalize(light_dir);
+		glm_vec3_normalize(normal);
+		intensity = glm_vec3_dot(normal, light_dir);
+
+		/* get the bounding box of the triangle */
+		int maxX = min(RENDER_WIDTH - 1, max(p1[0], max(p2[0], p3[0])));
+		int minX = max(0, min(p1[0], min(p2[0], p3[0])));
+		int maxY = min(RENDER_HEIGHT - 1, max(p1[1], max(p2[1], p3[1])));
+		int minY = max(0, min(p1[1], min(p2[1], p3[1])));
+
+		for (pixels[0] = minX; pixels[0] <= maxX; pixels[0]++)
 		{
-			vec3 bc_screen;
-			ivec2 pixels;
-			Point screenP1, screenP2, screenP3;
-			ivec2 p1, p2, p3;
-			vec2 bc_textureCoord;
-			int r, g, b;
-			float zValue;
-			float intensity;
-
-			setViewPort(point1, &screenP1);
-			setViewPort(point2, &screenP2);
-			setViewPort(point3, &screenP3);
-
-			p1[0] = screenP1.x;
-			p1[1] = screenP1.y;
-			p2[0] = screenP2.x;
-			p2[1] = screenP2.y;
-			p3[0] = screenP3.x;
-			p3[1] = screenP3.y;
-
-			// for future light calculations
-			vec3 light_dir = { 0.0f, 0.0f, 1.0f };
-			glm_vec3_normalize(light_dir);
-			glm_vec3_normalize(normal);
-			intensity = glm_vec3_dot(normal, light_dir);
-
-			/* get the bounding box of the triangle */
-			int maxX = min(WIDTH - 1, max(p1[0], max(p2[0], p3[0])));
-			int minX = max(0, min(p1[0], min(p2[0], p3[0])));
-			int maxY = min(HEIGHT - 1, max(p1[1], max(p2[1], p3[1])));
-			int minY = max(0, min(p1[1], min(p2[1], p3[1])));
-
-			for (pixels[0] = minX; pixels[0] <= maxX; pixels[0]++)
+			for (pixels[1] = minY; pixels[1] <= maxY; pixels[1]++)
 			{
-				for (pixels[1] = minY; pixels[1] <= maxY; pixels[1]++)
+				//if((pixels[0] == p1[0] && pixels[1] == p1[1]))
+				//	Barycentric(pixels, p1, p2, p3, bc_screen);
+				Barycentric(pixels, p1, p2, p3, bc_screen);
+
+				if (bc_screen[0] < 0 || bc_screen[1] < 0 || bc_screen[2] < 0)
+					continue;
+
+				// texture sampler
+				bc_textureCoord[0] = textureCoord1[0] * bc_screen[0] +
+					textureCoord2[0] * bc_screen[1] +
+					textureCoord3[0] * bc_screen[2];
+				bc_textureCoord[1] = textureCoord1[1] * bc_screen[0] +
+					textureCoord2[1] * bc_screen[1] +
+					textureCoord3[1] * bc_screen[2];
+				getTextureColor(bc_textureCoord, textureWidth, textureHeight, numOfChannels,
+					texture, &r, &g, &b);
+
+				// depth test
+				zValue = point1[2] * bc_screen[0] + point2[2] * bc_screen[1] + point3[2] * bc_screen[2];
+				if (zValue > depthBuffer[pixels[0] + pixels[1] * RENDER_WIDTH])
 				{
-					Barycentric(pixels, p1, p2, p3, bc_screen);
-					if (bc_screen[0] < 0 || bc_screen[1] < 0 || bc_screen[2] < 0)
-						continue;
-
-					// texture sampler
-					bc_textureCoord[0] = textureCoord1[0] * bc_screen[0] + 
-						                 textureCoord2[0] * bc_screen[1] + 
-						                 textureCoord3[0] * bc_screen[2];
-					bc_textureCoord[1] = textureCoord1[1] * bc_screen[0] + 
-						                 textureCoord2[1] * bc_screen[1] + 
-						                 textureCoord3[1] * bc_screen[2];
-					getTextureColor(bc_textureCoord, textureWidth, textureHeight, numOfChannels, 
-						            texture, &r, &g, &b);
-
-					// depth test
-					zValue = point1.z * bc_screen[0] + point2.z * bc_screen[1] + point3.z * bc_screen[2];
-					if (zValue > depthBuffer[pixels[0] + pixels[1] * WIDTH])
-					{
-						depthBuffer[pixels[0] + pixels[1] * WIDTH] = zValue;
-						setPixel(r, g, b, pixels[0], pixels[1], data);
-					}
+					depthBuffer[pixels[0] + pixels[1] * RENDER_WIDTH] = zValue;
+					setPixel(r, g, b, pixels[0], pixels[1], data);
 				}
 			}
 		}
 	}
 	else
 	{
-		drawLine(255, 255, 255, point1, point2, data);
-		drawLine(255, 255, 255, point2, point3, data);
-		drawLine(255, 255, 255, point3, point1, data);
+		drawLine(255, 255, 255, pointf1, pointf2, data);
+		drawLine(255, 255, 255, pointf2, pointf3, data);
+		drawLine(255, 255, 255, pointf3, pointf1, data);
 	}
+}
+
+void vertexShader(vec3 vertexPos, vec4 outputPos, mat4 model)
+{
+	// * model
+	glm_mat4_mulv(model, (vec4) { vertexPos[0], vertexPos[1], vertexPos[2], 1.0f }, outputPos);
 }
 
 int main()
@@ -262,8 +279,8 @@ int main()
 
 	unsigned char* data = 0;
 	unsigned char* depthBuffer = 0;
-	createColorBuffer(WIDTH, HEIGHT, &data);
-	createDepthBuffer(WIDTH, HEIGHT, &depthBuffer);
+	createColorBuffer(RENDER_WIDTH, RENDER_HEIGHT, &data);
+	createDepthBuffer(RENDER_WIDTH, RENDER_HEIGHT, &depthBuffer);
 
 	// obj load
 	size_t numOfTriangles = LoadObjAndConvert("../../Resources/african_head.obj");
@@ -275,21 +292,33 @@ int main()
 
 	// texture load
 	int textureWidth, textureHeight, numOfChannels, r, g, b;
-	unsigned char* texture = stbi_load("../../Resources/african_head_diffuse.tga", 
-		                               &textureWidth, &textureHeight, &numOfChannels, 0);
+	unsigned char* texture = stbi_load("../../Resources/african_head_diffuse.tga",
+		&textureWidth, &textureHeight, &numOfChannels, 0);
 
-	float red = 0;
+	//transformation
+	vec4 transformedP1, transformedP2, transformedP3;
+	mat4 modelMatrix;
+
 	while (!glfwWindowShouldClose(window))
 	{
 		clearColor(0, 0, 0, data);
 		clearDepthBuffer(-1.0f, depthBuffer);
 		glfwPollEvents();
+
+		glm_mat4_identity(modelMatrix);
+		glm_scale(modelMatrix, (vec3) { 1.0f, 1.0f, 1.0f });
+		//glm_translate(modelMatrix, (vec3) { 0.3f, 0.3f, 0.0f });
+		glm_rotate(modelMatrix, (float)glfwGetTime(), (vec3) { 0.0f, 1.0f, 0.0f });
+
 		for (size_t i = 0; i < numOfTriangles; i++)
 		{
+			vertexShader(vertexArray[0 + i * 3], transformedP1, modelMatrix);
+			vertexShader(vertexArray[1 + i * 3], transformedP2, modelMatrix);
+			vertexShader(vertexArray[2 + i * 3], transformedP3, modelMatrix);
 			drawTriangle(
-				vertexArray[0 + i * 3],
-				vertexArray[1 + i * 3],
-				vertexArray[2 + i * 3],
+				transformedP1,
+				transformedP2,
+				transformedP3,
 				textureArray[0 + i * 3],
 				textureArray[1 + i * 3],
 				textureArray[2 + i * 3],

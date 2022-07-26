@@ -21,7 +21,7 @@
 #include <unistd.h>
 #endif
 
-extern PointF* vertexArray;
+extern vec3* vertexArray;
 extern vec3* normalArray;
 extern vec2* textureArray;
 
@@ -203,7 +203,7 @@ int LoadObjAndConvert(const char* filename)
 
 	}
 
-	vertexArray = (PointF*)malloc(attrib.num_face_num_verts * 3 * sizeof(PointF));
+	vertexArray = (vec3*)malloc(attrib.num_face_num_verts * 3 * sizeof(vec3));
 	normalArray = (vec3*)malloc(attrib.num_face_num_verts * 3 * sizeof(vec3));
 	textureArray = (vec2*)malloc(attrib.num_face_num_verts * 3 * sizeof(vec2));
 
@@ -248,19 +248,18 @@ int LoadObjAndConvert(const char* filename)
 					v[1][k] = attrib.vertices[3 * (size_t)f1 + k];
 					v[2][k] = attrib.vertices[3 * (size_t)f2 + k];
 				}
-				p1.x = v[0][0];
-				p1.y = v[0][1];
-				p1.z = v[0][2];
-				p2.x = v[1][0];
-				p2.y = v[1][1];
-				p2.z = v[1][2];
-				p3.x = v[2][0];
-				p3.y = v[2][1];
-				p3.z = v[2][2];
 
-				vertexArray[0 + i * 3] = p1;
-				vertexArray[1 + i * 3] = p2;
-				vertexArray[2 + i * 3] = p3;
+				vertexArray[0 + i * 3][0] = v[0][0];
+				vertexArray[0 + i * 3][1] = v[0][1];
+				vertexArray[0 + i * 3][2] = v[0][2];
+
+				vertexArray[1 + i * 3][0] = v[1][0];
+				vertexArray[1 + i * 3][1] = v[1][1];
+				vertexArray[1 + i * 3][2] = v[1][2];
+
+				vertexArray[2 + i * 3][0] = v[2][0];
+				vertexArray[2 + i * 3][1] = v[2][1];
+				vertexArray[2 + i * 3][2] = v[2][2];
 
 				if (attrib.num_texcoords > 0)
 				{

@@ -1,7 +1,7 @@
 #pragma once
 #include "commonTypes.h"
 
-PointF* vertexArray;
+vec3* vertexArray;
 vec3* normalArray;
 vec2* textureArray;
 
