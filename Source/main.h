@@ -20,4 +20,4 @@ void Barycentric(ivec2 p, ivec2 a, ivec2 b, ivec2 c, vec3 barycentricCoords);
 void getTextureColor(vec2 textCoord, int textureWidth, int textureHeight, int numOfChannels, 
 	unsigned char* texture, int* r, int* g, int* b);
 bool checkTriangle(ivec2 p1, ivec2 p2, ivec2 p3);
-void vertexShader(vec3 vertexPos, vec4 outputPos, mat4 model);
+void vertexShader(vec3 vertexPos, vec3 outputPos, mat4 model, mat4 view, mat4 projection);

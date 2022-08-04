@@ -178,7 +178,6 @@ void Barycentric(ivec2 p, ivec2 a, ivec2 b, ivec2 c, vec3 barycentricCoords)
 	}
 }
 
-
 void drawTriangle(vec3 point1, vec3 point2, vec3 point3,
 	vec2 textureCoord1, vec2 textureCoord2, vec2 textureCoord3, vec3 normal,
 	int textureWidth, int textureHeight, int numOfChannels, unsigned char* texture,
@@ -267,10 +266,28 @@ void drawTriangle(vec3 point1, vec3 point2, vec3 point3,
 	}
 }
 
-void vertexShader(vec3 vertexPos, vec4 outputPos, mat4 model)
+void vertexShader(vec3 vertexPos, vec3 outputPos, mat4 model, mat4 view, mat4 projection)
 {
-	// * model
-	glm_mat4_mulv(model, (vec4) { vertexPos[0], vertexPos[1], vertexPos[2], 1.0f }, outputPos);
+	vec4 m, mv, mvp;
+	float w;
+
+	// mat4 * vec4 = vec4
+	//local to world
+	glm_mat4_mulv(model, (vec4) { vertexPos[0], vertexPos[1], vertexPos[2], 1.0f }, m);
+	
+	//world to eye
+	glm_mat4_mulv(view, m, mv);
+
+	//eye to clip
+	glm_mat4_mulv(projection, mv, mvp);
+	
+	//clip to NDC
+	// OpenGL uses w=-z because it converts the RH coordinate system to LF.
+	// I only change the final Z position of the vertex to continue with the RH system.
+	w = mvp[3]; // w=1 for orthographic projection
+	outputPos[0] = mvp[0] / w;
+	outputPos[1] = mvp[1] / w;
+	outputPos[2] = -mvp[2] / w;
 }
 
 int main()
@@ -296,8 +313,17 @@ int main()
 		&textureWidth, &textureHeight, &numOfChannels, 0);
 
 	//transformation
-	vec4 transformedP1, transformedP2, transformedP3;
-	mat4 modelMatrix;
+	vec3 transformedP1, transformedP2, transformedP3;
+	mat4 modelMatrix, viewMatrix, projectionMatrix;
+
+	glm_mat4_identity(viewMatrix);
+	glm_mat4_identity(projectionMatrix);
+	glm_mat4_identity(modelMatrix);
+
+	//glm_ortho(-5.0f, 5.0f, -5.0f, 5.0f, 0.1f, 10.0f, projectionMatrix);
+	glm_perspective(glm_rad(45.0f), 1.0f, 0.1f, 100.0f, projectionMatrix);
+	glm_lookat((vec3) { 0.0f, 0.0f, 3.0f }, (vec3) { 0.0f, 0.0f, 0.0f }, (vec3) { 0.0f, 1.0f, 0.0f }, viewMatrix);
+	glm_scale(modelMatrix, (vec3) { 1.0f, 1.0f, 1.0f });
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -305,16 +331,11 @@ int main()
 		clearDepthBuffer(-1.0f, depthBuffer);
 		glfwPollEvents();
 
-		glm_mat4_identity(modelMatrix);
-		glm_scale(modelMatrix, (vec3) { 1.0f, 1.0f, 1.0f });
-		//glm_translate(modelMatrix, (vec3) { 0.3f, 0.3f, 0.0f });
-		glm_rotate(modelMatrix, (float)glfwGetTime(), (vec3) { 0.0f, 1.0f, 0.0f });
-
 		for (size_t i = 0; i < numOfTriangles; i++)
 		{
-			vertexShader(vertexArray[0 + i * 3], transformedP1, modelMatrix);
-			vertexShader(vertexArray[1 + i * 3], transformedP2, modelMatrix);
-			vertexShader(vertexArray[2 + i * 3], transformedP3, modelMatrix);
+			vertexShader(vertexArray[0 + i * 3], transformedP1, modelMatrix, viewMatrix, projectionMatrix);
+			vertexShader(vertexArray[1 + i * 3], transformedP2, modelMatrix, viewMatrix, projectionMatrix);
+			vertexShader(vertexArray[2 + i * 3], transformedP3, modelMatrix, viewMatrix, projectionMatrix);
 			drawTriangle(
 				transformedP1,
 				transformedP2,
@@ -334,12 +355,11 @@ int main()
 		textureData = data;
 		MainLoop();
 		glfwSwapBuffers(window);
-		//writeImage("../../../output_images/texture_test.png", WIDTH, HEIGHT,
-		//	3, data, WIDTH * NUMBER_OF_CHANNELS, 1);
+		writeImage("../../../output_images/projection.png", RENDER_WIDTH, RENDER_HEIGHT,
+			3, data, RENDER_WIDTH * NUMBER_OF_CHANNELS, 1);
 	}
 	glfwDestroyWindow(window);
 	glfwTerminate();
-
 
 	free(data);
 	free(vertexArray);
