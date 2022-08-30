@@ -22,6 +22,7 @@ typedef struct
 
 #define WINDOW_WIDTH       (1024)
 #define WINDOW_HEIGHT      (1024)
-#define RENDER_WIDTH       (1024)
-#define RENDER_HEIGHT      (1024)
+#define RENDER_WIDTH       (512)
+#define RENDER_HEIGHT      (512)
 #define NUMBER_OF_CHANNELS (3)
+
